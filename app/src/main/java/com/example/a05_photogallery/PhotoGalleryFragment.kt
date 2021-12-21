@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.a05_photogallery.api.FlickrApi
@@ -21,6 +22,7 @@ private const val TAG = "PhotoGalleryFragment"
 
 class PhotoGalleryFragment : Fragment() {
 
+    private lateinit var photoGalleryViewModel: PhotoGalleryViewModel
     private lateinit var photoRecyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,12 +45,16 @@ class PhotoGalleryFragment : Fragment() {
 //                Log.e(TAG, "failed to fetch photos", t)
 //            }
 //        })
-        val flickrLiveData: LiveData<String> = FlickrFetchr().fetchContents()
-        flickrLiveData.observe(
-            this,
-            Observer { responseString ->
-                Log.d(TAG, "Response received: $responseString")
-            })
+//        val flickrLiveData: LiveData<List<GalleryItem>> = FlickrFetchr().fetchPhotos()
+//        flickrLiveData.observe(
+//            this,
+//            Observer { galleryItems ->
+//                Log.d(TAG, "Response received: $galleryItems")
+//            })
+
+        // ViewModelProvider를 사용하게 되면 장치회전 같은 상황에서 fragment 인스턴스가 소멸하고 다시 생성되더라도
+        // photoGalleryViewModel 인스턴스는 다시 생성되지 않고 메모리에 계속 보존되어 사용된다.
+        photoGalleryViewModel = ViewModelProvider(this).get(PhotoGalleryViewModel::class.java)
 
     }
 
@@ -63,6 +69,18 @@ class PhotoGalleryFragment : Fragment() {
         photoRecyclerView.layoutManager = GridLayoutManager(context, 3)
 
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // 화면 회전이나 galleryItems의 구성 변경이 발생하더라도 대응 가능
+        // 보통 jetpack ViewModel과 livedata는 장치 회전 겸 데이터 구성 변경에 대응하기 위한 조합으로 많이 사용된다.
+        photoGalleryViewModel.galleryItemLiveData.observe(
+            viewLifecycleOwner,
+            Observer { galleryItems ->
+                Log.d(TAG, "Have gallery items from ViewModel $galleryItems")
+            }
+        )
     }
 
     companion object {
