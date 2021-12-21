@@ -17,6 +17,7 @@ private const val TAG = "FlickrFetchr"
 
 class FlickrFetchr {
     private val flickrApi: FlickrApi
+    private lateinit var flickrRequest: Call<FlickrResponse>
 
     init {
         // addConverterFactory(ScalarsConverterFactory.create())를 추가하면, FlickrApi 인터페이스에서 지정한 Call<String>으로 변환된다.
@@ -32,7 +33,7 @@ class FlickrFetchr {
     fun fetchPhotos(): LiveData<List<GalleryItem>> {
 //        val responseLiveData: MutableLiveData<String> = MutableLiveData()
         val responseLiveData: MutableLiveData<List<GalleryItem>> = MutableLiveData()
-        val flickrRequest: Call<FlickrResponse> = flickrApi.fetchPhotos()
+        flickrRequest = flickrApi.fetchPhotos()
 
         // Call.enqueue는 요청을 백그라운드 스레드에서 실행한다.
         flickrRequest.enqueue(object : Callback<FlickrResponse> {
@@ -55,5 +56,10 @@ class FlickrFetchr {
         })
 
         return responseLiveData
+    }
+    // 데이터 다운로드 취소를 위한 함수
+    fun cancelOnCleared() {
+        if(::flickrRequest.isInitialized)
+            flickrRequest.cancel()
     }
 }
