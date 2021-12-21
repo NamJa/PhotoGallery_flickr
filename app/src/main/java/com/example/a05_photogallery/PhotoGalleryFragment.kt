@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.a05_photogallery.api.FlickrApi
@@ -24,30 +26,30 @@ class PhotoGalleryFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val retrofit: Retrofit = Retrofit.Builder()
-            .baseUrl("https://www.flickr.com/")
-            .addConverterFactory(ScalarsConverterFactory.create())
-            .build()
-        // addConverterFactory(ScalarsConverterFactory.create())를 추가하면, FlickrApi 인터페이스에서 지정한 Call<String>으로 변환된다.
 
-        val flickrApi: FlickrApi = retrofit.create(FlickrApi::class.java)
+//        val flickrHomePageRequest: Call<String> = flickrApi.fetchContents()
+//        // 웹 요청을 실행하는것이 아닌 Call 객체를 반환한다.
+//
+//        // Call.enqueue는 요청을 백그라운드 스레드에서 실행한다.
+//        flickrHomePageRequest.enqueue(object : Callback<String> {
+//
+//            // 백그라운드 스레드에서 실행되는 요청이 완료되면 Retrofit은 main(UI) 스레드에 제공된 콜백 함수 중 하나를 호출한다.
+//            // 그 함수들은 밑의 함수들이면 이 중에 한 개가 선택된다.
+//            override fun onResponse(call: Call<String>, response: Response<String>) {
+//                Log.d(TAG, "response received: ${response.body()}")
+//            }
+//
+//            override fun onFailure(call: Call<String>, t: Throwable) {
+//                Log.e(TAG, "failed to fetch photos", t)
+//            }
+//        })
+        val flickrLiveData: LiveData<String> = FlickrFetchr().fetchContents()
+        flickrLiveData.observe(
+            this,
+            Observer { responseString ->
+                Log.d(TAG, "Response received: $responseString")
+            })
 
-        val flickrHomePageRequest: Call<String> = flickrApi.fetchContents()
-        // 웹 요청을 실행하는것이 아닌 Call 객체를 반환한다.
-
-        // Call.enqueue는 요청을 백그라운드 스레드에서 실행한다.
-        flickrHomePageRequest.enqueue(object : Callback<String> {
-
-            // 백그라운드 스레드에서 실행되는 요청이 완료되면 Retrofit은 main(UI) 스레드에 제공된 콜백 함수 중 하나를 호출한다.
-            // 그 함수들은 밑의 함수들이면 이 중에 한 개가 선택된다.
-            override fun onResponse(call: Call<String>, response: Response<String>) {
-                Log.d(TAG, "response received: ${response.body()}")
-            }
-
-            override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.e(TAG, "failed to fetch photos", t)
-            }
-        })
     }
 
     override fun onCreateView(
