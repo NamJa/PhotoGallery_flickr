@@ -1,11 +1,17 @@
 package com.example.a05_photogallery
 
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
@@ -25,37 +31,20 @@ class PhotoGalleryFragment : Fragment() {
 
     private lateinit var photoGalleryViewModel: PhotoGalleryViewModel
     private lateinit var photoRecyclerView: RecyclerView
+    private lateinit var thumbnailDownloader: ThumbnailDownloader<PhotoHolder>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-//        val flickrHomePageRequest: Call<String> = flickrApi.fetchContents()
-//        // 웹 요청을 실행하는것이 아닌 Call 객체를 반환한다.
-//
-//        // Call.enqueue는 요청을 백그라운드 스레드에서 실행한다.
-//        flickrHomePageRequest.enqueue(object : Callback<String> {
-//
-//            // 백그라운드 스레드에서 실행되는 요청이 완료되면 Retrofit은 main(UI) 스레드에 제공된 콜백 함수 중 하나를 호출한다.
-//            // 그 함수들은 밑의 함수들이면 이 중에 한 개가 선택된다.
-//            override fun onResponse(call: Call<String>, response: Response<String>) {
-//                Log.d(TAG, "response received: ${response.body()}")
-//            }
-//
-//            override fun onFailure(call: Call<String>, t: Throwable) {
-//                Log.e(TAG, "failed to fetch photos", t)
-//            }
-//        })
-//        val flickrLiveData: LiveData<List<GalleryItem>> = FlickrFetchr().fetchPhotos()
-//        flickrLiveData.observe(
-//            this,
-//            Observer { galleryItems ->
-//                Log.d(TAG, "Response received: $galleryItems")
-//            })
-
-        // ViewModelProvider를 사용하게 되면 장치회전 같은 상황에서 fragment 인스턴스가 소멸하고 다시 생성되더라도
-        // photoGalleryViewModel 인스턴스는 다시 생성되지 않고 메모리에 계속 보존되어 사용된다.
+        retainInstance = true
         photoGalleryViewModel = ViewModelProvider(this).get(PhotoGalleryViewModel::class.java)
+
+        val responseHandler = Handler()
+        thumbnailDownloader = ThumbnailDownloader(responseHandler) { photoHolder, bitmap ->
+            val drawable = BitmapDrawable(resources, bitmap)
+            photoHolder.bindDrawable(drawable)
+
+        }
+        lifecycle.addObserver(thumbnailDownloader.fragmentLifecycleObserver) // fragment 생명주기에 background 스레드 인식
 
     }
 
@@ -64,6 +53,7 @@ class PhotoGalleryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        viewLifecycleOwner.lifecycle.addObserver(thumbnailDownloader.viewLifecycleObserver)
         val view = inflater.inflate(R.layout.fragment_photo_gallery, container, false)
 
         photoRecyclerView = view.findViewById(R.id.photo_recycler_view)
@@ -85,21 +75,31 @@ class PhotoGalleryFragment : Fragment() {
         )
     }
 
-
-
-    private class PhotoHolder(itemTextView: TextView) : RecyclerView.ViewHolder(itemTextView) {
-        val bindTitle: (CharSequence) -> Unit = itemTextView::setText
+    override fun onDestroy() {
+        super.onDestroy()
+        lifecycle.removeObserver(thumbnailDownloader.fragmentLifecycleObserver)
     }
 
-    private class PhotoAdapter(private val galleryItems: List<GalleryItem>) : RecyclerView.Adapter<PhotoHolder>() {
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewLifecycleOwner.lifecycle.removeObserver(thumbnailDownloader.viewLifecycleObserver)
+    }
+
+    private class PhotoHolder(itemImageView: ImageView) : RecyclerView.ViewHolder(itemImageView) {
+        val bindDrawable: (Drawable) -> Unit = itemImageView::setImageDrawable
+    }
+
+    private inner class PhotoAdapter(private val galleryItems: List<GalleryItem>) : RecyclerView.Adapter<PhotoHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
-            val textView = TextView(parent.context)
-            return PhotoHolder(textView)
+            val view = layoutInflater.inflate(R.layout.list_item_gallery, parent, false) as ImageView
+            return PhotoHolder(view)
         }
 
         override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
             val galleryItem = galleryItems[position]
-            holder.bindTitle(galleryItem.title)
+            val placeholder: Drawable = ContextCompat.getDrawable(requireContext(), R.drawable.mancity) ?: ColorDrawable()
+            holder.bindDrawable(placeholder)
+            thumbnailDownloader.queueThumbnail(holder, galleryItem.url)
         }
 
         override fun getItemCount(): Int {
