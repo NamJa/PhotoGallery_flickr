@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.http.Url
 
 private const val TAG = "PhotoGalleryFragment"
 
@@ -109,5 +111,6 @@ class PhotoGalleryFragment : Fragment() {
 
     companion object {
         fun newInstance() = PhotoGalleryFragment()
+        private var lruCache = LruCache<PhotoHolder, Url>(100)
     }
 }
