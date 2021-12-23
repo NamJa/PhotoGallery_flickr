@@ -9,21 +9,17 @@ import android.util.Log
 import android.util.LruCache
 import android.view.*
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.a05_photogallery.api.FlickrApi
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.scalars.ScalarsConverterFactory
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import retrofit2.http.Url
 
 private const val TAG = "PhotoGalleryFragment"
@@ -48,6 +44,20 @@ class PhotoGalleryFragment : Fragment() {
 
         }
         lifecycle.addObserver(thumbnailDownloader.fragmentLifecycleObserver) // fragment 생명주기에 background 스레드 인식
+
+
+        //Constraints를 통해 wifi 연결을 강제할 수 있다. 그 밖애 일정 수치의 배터리 용량도 요구할 수 있다.
+        // workRequest에 .setConstraints(constraints)를 추가하고 build하면 됨
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .build()
+        // 작업 스케쥴링을 위한 준비
+        val workRequest = OneTimeWorkRequest
+            .Builder(PollWorker::class.java)
+            .build()
+        context?.let {
+            WorkManager.getInstance(it).enqueue(workRequest)
+        }
 
     }
 

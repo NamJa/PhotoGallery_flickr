@@ -42,12 +42,21 @@ class FlickrFetchr {
        flickrApi = retrofit.create(FlickrApi::class.java)
     }
 
+    // 백그라운드로 실행되기 때문에 Retrofit Call 객체를 반환하는 요청 함수를 통해서 실행한다.
+    // -> Retrofit Call 객체에 execute()를 사용하면 동기화된 웹 요청을 사용할 수 있다.
+    fun fetchPhotosRequest(): Call<FlickrResponse> {
+        return flickrApi.fetchPhotos()
+    }
+
     fun fetchPhotos(): LiveData<List<GalleryItem>> {
-        return fetchPhotoMetadata(flickrApi.fetchPhotos())
+        return fetchPhotoMetadata(fetchPhotosRequest())
+    }
+    fun searchPhotosRequest(query: String): Call<FlickrResponse> {
+        return flickrApi.searchPhotos(query)
     }
 
     fun searchPhotos(query: String): LiveData<List<GalleryItem>> {
-        return fetchPhotoMetadata(flickrApi.searchPhotos(query))
+        return fetchPhotoMetadata(searchPhotosRequest(query))
     }
 
     // 다른 컴포넌트가 변경하는 행위를 방지하기 위해 non-mutable 타입 사용
