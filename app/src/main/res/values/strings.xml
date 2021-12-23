@@ -2,4 +2,7 @@
     <string name="app_name">05_PhotoGallery</string>
     <string name="search">검색</string>
     <string name="clear_search">검색 값 지움</string>
+    <string name="notification_channel_name">FlickrFetchr</string>
+    <string name="new_pictures_title">신규 포토갤러리 사진들</string>
+    <string name="new_pictures_text">포토갤러리에 신규 사진이 있습니다.</string>
 </resources>

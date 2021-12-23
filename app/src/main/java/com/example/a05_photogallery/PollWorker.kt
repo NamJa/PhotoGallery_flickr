@@ -1,7 +1,11 @@
 package com.example.a05_photogallery
 
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 
@@ -35,6 +39,25 @@ class PollWorker(val context: Context, workerParams: WorkerParameters): Worker(c
         } else {
             Log.i(TAG, "Got a new result: $resultId")
             QueryPreferences.setLastResultId(context, lastResultId)
+
+            val intent = PhotoGalleryActivity.newIntent(context)
+            val pendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
+
+            val resources = context.resources
+            val notification = NotificationCompat
+                .Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setTicker(resources.getString(R.string.new_pictures_title))
+                .setSmallIcon(android.R.drawable.ic_menu_report_image)
+                .setContentTitle(resources.getString(R.string.new_pictures_title))
+                .setContentText(resources.getString(R.string.new_pictures_text))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(0, notification)
+            // 아이디(정수)는 알림의 식별자이며, 앱 전체에서 고유한 값이어야 재사용이 가능하다.
+            // ex) 앱에서 보낸 알림이 남아있다면 같은 아이디를 갖는 다른 알림으로 교체된다.
         }
 
         return Result.success()
