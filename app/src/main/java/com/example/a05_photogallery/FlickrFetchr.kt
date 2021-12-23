@@ -8,7 +8,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.a05_photogallery.api.FlickrApi
 import com.example.a05_photogallery.api.FlickrResponse
+import com.example.a05_photogallery.api.PhotoInterceptor
 import com.example.a05_photogallery.api.PhotoResponse
+import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
@@ -24,20 +26,34 @@ class FlickrFetchr {
     private lateinit var flickrRequest: Call<FlickrResponse>
 
     init {
+        // 인터셉터 생성
+        val client = OkHttpClient.Builder()
+            .addInterceptor(PhotoInterceptor())
+            .build()
+
         // addConverterFactory(ScalarsConverterFactory.create())를 추가하면, FlickrApi 인터페이스에서 지정한 Call<String>으로 변환된다.
         val retrofit: Retrofit = Retrofit.Builder()
             .baseUrl("https://api.flickr.com/")
             .addConverterFactory(GsonConverterFactory.create())
+            .client(client)
             .build()
+        // interceptor 등록을 위한 Retrofit.client() 호출
 
-        flickrApi = retrofit.create(FlickrApi::class.java)
+       flickrApi = retrofit.create(FlickrApi::class.java)
+    }
+
+    fun fetchPhotos(): LiveData<List<GalleryItem>> {
+        return fetchPhotoMetadata(flickrApi.fetchPhotos())
+    }
+
+    fun searchPhotos(query: String): LiveData<List<GalleryItem>> {
+        return fetchPhotoMetadata(flickrApi.searchPhotos(query))
     }
 
     // 다른 컴포넌트가 변경하는 행위를 방지하기 위해 non-mutable 타입 사용
-    fun fetchPhotos(): LiveData<List<GalleryItem>> {
+    private fun fetchPhotoMetadata(flickrRequest: Call<FlickrResponse>): LiveData<List<GalleryItem>> {
 //        val responseLiveData: MutableLiveData<String> = MutableLiveData()
         val responseLiveData: MutableLiveData<List<GalleryItem>> = MutableLiveData()
-        flickrRequest = flickrApi.fetchPhotos()
 
         // Call.enqueue는 요청을 백그라운드 스레드에서 실행한다.
         flickrRequest.enqueue(object : Callback<FlickrResponse> {

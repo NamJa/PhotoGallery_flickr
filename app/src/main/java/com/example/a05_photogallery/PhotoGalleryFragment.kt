@@ -7,11 +7,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.util.LruCache
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
@@ -38,6 +37,8 @@ class PhotoGalleryFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         retainInstance = true
+        setHasOptionsMenu(true)
+
         photoGalleryViewModel = ViewModelProvider(this).get(PhotoGalleryViewModel::class.java)
 
         val responseHandler = Handler()
@@ -85,6 +86,31 @@ class PhotoGalleryFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         viewLifecycleOwner.lifecycle.removeObserver(thumbnailDownloader.viewLifecycleObserver)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.fragment_photo_gallery, menu)
+
+        val searchItem: MenuItem = menu.findItem(R.id.menu_item_search)
+
+        // getActionView()를 통해 SearchView의 객체 참조를 가져온다.
+        val searchView = searchItem.actionView as SearchView
+
+        searchView.apply {
+            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(queryText: String): Boolean {
+                    Log.d(TAG, "QueryTextSubmit: $queryText")
+                    photoGalleryViewModel.fetchPhotos(queryText)
+                    return true
+                }
+
+                override fun onQueryTextChange(queryText: String?): Boolean {
+                    Log.d(TAG, "QueryTextChange: $queryText")
+                    return false
+                }
+            })
+        }
     }
 
     private class PhotoHolder(itemImageView: ImageView) : RecyclerView.ViewHolder(itemImageView) {
