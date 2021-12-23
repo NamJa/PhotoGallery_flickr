@@ -110,6 +110,21 @@ class PhotoGalleryFragment : Fragment() {
                     return false
                 }
             })
+            setOnSearchClickListener {
+                searchView.setQuery(photoGalleryViewModel.searchTerm, false)
+                // 검색 버튼을 클릭하면 이전에 검색했던 쿼리 문자열을
+                // 공유 preference에서 꺼내와서 검색 필드에 채운다.
+            }
+        }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_item_clear -> {
+                photoGalleryViewModel.fetchPhotos("")
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
