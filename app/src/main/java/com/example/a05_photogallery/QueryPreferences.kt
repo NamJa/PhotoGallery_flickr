@@ -5,6 +5,7 @@ import androidx.preference.PreferenceManager
 
 private const val PREF_SEARCH_QUERY = "searchQuery"
 private const val PREF_LAST_RESULT_ID = "lastReusltId"
+private const val PREF_IS_POLLING = "isPolling"
 
 // 싱글톤 패턴을 위해 class가 아닌 object 키워드 사용
 object QueryPreferences {
@@ -32,6 +33,16 @@ object QueryPreferences {
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
             .putString(PREF_LAST_RESULT_ID, lastResultId)
+            .apply()
+    }
+    fun isPolling(context: Context): Boolean {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+            .getBoolean(PREF_IS_POLLING, false)
+    }
+    fun setPolling(context: Context, isOn: Boolean) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(PREF_IS_POLLING, isOn)
             .apply()
     }
 }

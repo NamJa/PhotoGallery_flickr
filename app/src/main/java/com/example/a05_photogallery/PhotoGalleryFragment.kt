@@ -16,13 +16,12 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.work.Constraints
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
+import androidx.work.*
 import retrofit2.http.Url
+import java.util.concurrent.TimeUnit
 
 private const val TAG = "PhotoGalleryFragment"
+private const val POLL_WORK = "POLL_WORK"
 
 class PhotoGalleryFragment : Fragment() {
 
@@ -48,16 +47,19 @@ class PhotoGalleryFragment : Fragment() {
 
         //Constraints를 통해 wifi 연결을 강제할 수 있다. 그 밖애 일정 수치의 배터리 용량도 요구할 수 있다.
         // workRequest에 .setConstraints(constraints)를 추가하고 build하면 됨
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .build()
-        // 작업 스케쥴링을 위한 준비
-        val workRequest = OneTimeWorkRequest
-            .Builder(PollWorker::class.java)
-            .build()
-        context?.let {
-            WorkManager.getInstance(it).enqueue(workRequest)
-        }
+//        val constraints = Constraints.Builder()
+//            .setRequiredNetworkType(NetworkType.UNMETERED)
+//            .build()
+//        // 작업 스케쥴링을 위한 준비
+//        val workRequest = OneTimeWorkRequest
+//            .Builder(PollWorker::class.java)
+//            .build()
+//
+////        context?.let {
+////            WorkManager.getInstance(it).enqueue(workRequest)
+////        } // 위와 아래는 같다
+//        WorkManager.getInstance(requireContext()).enqueue(workRequest)
+
 
     }
 
@@ -126,6 +128,15 @@ class PhotoGalleryFragment : Fragment() {
                 // 공유 preference에서 꺼내와서 검색 필드에 채운다.
             }
         }
+
+        val toggleItem = menu.findItem(R.id.menu_item_toggle_polling)
+        val isPolling = QueryPreferences.isPolling(requireContext())
+        val toggleItemTitle = if(isPolling) {
+            R.string.stop_polling
+        } else {
+            R.string.start_polling
+        }
+        toggleItem.setTitle(toggleItemTitle)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -133,6 +144,26 @@ class PhotoGalleryFragment : Fragment() {
             R.id.menu_item_clear -> {
                 photoGalleryViewModel.fetchPhotos("")
                 true
+            }
+            R.id.menu_item_toggle_polling -> {
+                val isPolling = QueryPreferences.isPolling(requireContext())
+                if (isPolling) {
+                    WorkManager.getInstance(requireContext()).cancelUniqueWork(POLL_WORK)
+                    QueryPreferences.setPolling(requireContext(), false)
+                } else {
+                    val constraints = Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.UNMETERED)
+                        .build()
+                    val periodicRequest = PeriodicWorkRequest
+                        .Builder(PollWorker::class.java, 15, TimeUnit.MINUTES)
+                        .setConstraints(constraints)
+                        .build()
+                    // POLL_WORK라는 작업 이름을 넘겨줌으로서, 실행 및 취소가 더 용이하다.
+                    WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(POLL_WORK, ExistingPeriodicWorkPolicy.KEEP, periodicRequest)
+                    QueryPreferences.setPolling(requireContext(), true)
+                }
+                activity?.invalidateOptionsMenu()
+                return true
             }
             else -> super.onOptionsItemSelected(item)
         }
