@@ -3,6 +3,7 @@ package com.example.a05_photogallery
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -58,11 +59,16 @@ class PollWorker(val context: Context, workerParams: WorkerParameters): Worker(c
             notificationManager.notify(0, notification)
             // 아이디(정수)는 알림의 식별자이며, 앱 전체에서 고유한 값이어야 재사용이 가능하다.
             // ex) 앱에서 보낸 알림이 남아있다면 같은 아이디를 갖는 다른 알림으로 교체된다.
+            context.sendBroadcast(Intent(ACTION_SHOW_NOTIFICATION), PERM_PRIVATE)
         }
 
         return Result.success()
         //작업이 성공적으로 완료되었음을 나타내는 Result 클래스 인스턴스를 반환한다.
         // Result.success() 말고도 실패하면 다시 실행되지 않는
         // Result.failure() 함수 및 에러가 생겨서 이후에 작업을 다시 실행하겠다는 Result.retry()도 있다.
+    }
+    companion object {
+        const val ACTION_SHOW_NOTIFICATION = "com.example.a05_photogallery.SHOW_NOTIFICATION"
+        const val PERM_PRIVATE = "com.example.a05_photogallery.PRIVATE"
     }
 }
